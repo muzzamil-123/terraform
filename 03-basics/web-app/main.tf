@@ -1,3 +1,4 @@
+/*
 terraform {
   # Assumes s3 bucket and dynamo DB table already set up
   # See /code/03-basics/aws-backend
@@ -20,6 +21,7 @@ terraform {
 provider "aws" {
   region = "us-east-1"
 }
+*/
 
 resource "aws_instance" "instance_1" {
   ami             = "ami-011899242bb902164" # Ubuntu 20.04 LTS // us-east-1
@@ -68,8 +70,11 @@ data "aws_vpc" "default_vpc" {
   default = true
 }
 
-data "aws_subnet_ids" "default_subnet" {
-  vpc_id = data.aws_vpc.default_vpc.id
+data "aws_subnets" "default_subnet" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default_vpc.id]
+  }
 }
 
 resource "aws_security_group" "instances" {
@@ -181,18 +186,18 @@ resource "aws_security_group_rule" "allow_alb_all_outbound" {
 resource "aws_lb" "load_balancer" {
   name               = "web-app-lb"
   load_balancer_type = "application"
-  subnets            = data.aws_subnet_ids.default_subnet.ids
+  subnets            = data.aws_subnets.default_subnet.ids
   security_groups    = [aws_security_group.alb.id]
 
 }
 
 resource "aws_route53_zone" "primary" {
-  name = "devopsdeployed.com"
+  name = "houstonluxrhub.com"
 }
 
 resource "aws_route53_record" "root" {
   zone_id = aws_route53_zone.primary.zone_id
-  name    = "devopsdeployed.com"
+  name    = "houstonluxrhub.com"
   type    = "A"
 
   alias {
@@ -211,9 +216,9 @@ resource "aws_db_instance" "db_instance" {
   auto_minor_version_upgrade = true
   storage_type               = "standard"
   engine                     = "postgres"
-  engine_version             = "12"
-  instance_class             = "db.t2.micro"
-  name                       = "mydb"
+  engine_version             = "16"
+  instance_class             = "db.t3.micro"
+  db_name                    = "mydb"
   username                   = "foo"
   password                   = "foobarbaz"
   skip_final_snapshot        = true
